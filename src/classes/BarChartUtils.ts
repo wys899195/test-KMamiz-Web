@@ -1,6 +1,7 @@
 import { ApexOptions } from "apexcharts";
 import { Props } from "react-apexcharts";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
+import { TServiceTestAPI } from "../entities/TServiceTestAPI";
 import { TServiceInstability } from "../entities/TServiceInstability";
 import { TTotalServiceInterfaceCohesion } from "../entities/TTotalServiceInterfaceCohesion";
 import { Color } from "./ColorUtils";
@@ -285,6 +286,64 @@ export default class BarChartUtils {
     };
   }
 
+  static ServiceTestAPIOpts(
+    testapi: TServiceTestAPI[]
+  ): ApexOptions {
+    const base = BarChartUtils.StackMixedChartOverwriteOpts(
+      "Absolute Criticality (ACS)",
+      testapi,
+      {
+        x: (d) => d.name,
+        y: (d) => d.acs,
+        markerLabel: (d) =>
+          `ACS: ${BarChartUtils.roundToDisplay(d.acs)}`,
+        tooltip: (y, seriesIndex, dataPointIndex) => {
+          if (seriesIndex === 2) {
+            const c = BarChartUtils.roundToDisplay(
+              testapi[dataPointIndex].acs
+            );
+            return c.toString();
+          }
+          return y.toString();
+        },
+      },
+      2
+    );
+
+    const { maxY, maxRY } = testapi.reduce(
+      ({ maxY, maxRY }, { dataCohesion,usageCohesion,ais, ads }) => ({
+        maxY: Math.max(maxY, dataCohesion + usageCohesion),
+        maxRY: Math.max(maxRY, ais + ads),
+      }),
+      { maxY: 0, maxRY: 0 }
+    );
+
+    return {
+      ...base,
+      yaxis: [
+        {
+          title: {
+            text: "SIDC + SIUC",
+            style: {
+              color: BarChartUtils.stringToColorHex("SIDC + SIUC(Cohesion)"),
+            },
+          },
+          ...BarChartUtils.generateTick(maxY),
+        },
+        {
+          opposite: true,
+          title: {
+            text: "AIS + ADS",
+            style: {
+              color: BarChartUtils.stringToColorHex("AIS + ADS(Coupling)"),
+            },
+          },
+          ...BarChartUtils.generateTick(maxRY),
+        },
+      ],
+    };
+  }
+
   static ServiceInstabilityOpts(
     instability: TServiceInstability[]
   ): ApexOptions {
@@ -377,10 +436,24 @@ export default class BarChartUtils {
         f: "ads",
         name: "Absolute Dependence (ADS)",
       },
-      { f: "acs", name: "Absolute Criticality (ACS)" },
     ];
     const base = BarChartUtils.mapFieldsToSeries(fields, coupling);
     return BarChartUtils.markFieldToLine("Absolute Criticality (ACS)", base);
+  }
+
+  static SeriesFromServiceTestAPI(testapi: TServiceTestAPI[]) {
+    const fields = [
+      {
+        f: "dataCohesion+usageCohesion",
+        name: "SIDC + SIUC(Cohesion)",
+      },
+      {
+        f: "ais+ads",
+        name: "AIS + ADS(Coupling)",
+      },
+    ];
+    const base = BarChartUtils.mapFieldsToSeriesForTestAPI(fields, testapi);
+    return BarChartUtils.markFieldToLine("", base);
   }
 
   static SeriesFromServiceInstability(instability: TServiceInstability[]) {
@@ -409,6 +482,17 @@ export default class BarChartUtils {
       name,
       color: BarChartUtils.stringToColorHex(name),
       data: data.map((c) => BarChartUtils.roundToDisplay(c[f])),
+    }));
+  }
+
+  private static mapFieldsToSeriesForTestAPI(
+    fields: { f: string; name: string }[],
+    data: any[]
+  ) {
+    return fields.map(({ f, name }) => ({
+      name,
+      color: BarChartUtils.stringToColorHex(name),
+      data: data.map((c) => BarChartUtils.roundToDisplay(c[f.split("+")[0]] + c[f.split("+")[1]])),
     }));
   }
 

@@ -10,6 +10,7 @@ import BarChartUtils from "../classes/BarChartUtils";
 import { TTotalServiceInterfaceCohesion } from "../entities/TTotalServiceInterfaceCohesion";
 import { TServiceInstability } from "../entities/TServiceInstability";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
+import { TServiceTestAPI } from "../entities/TServiceTestAPI";
 import ViewportUtils from "../classes/ViewportUtils";
 
 const useStyles = makeStyles(() => ({
@@ -47,6 +48,7 @@ export default function Insights() {
   );
   const [coupling, setCoupling] = useState<TServiceCoupling[]>([]);
   const [instability, setInstability] = useState<TServiceInstability[]>([]);
+  const [testAPI, settestAPI] = useState<TServiceTestAPI []>([]);
   const [size, setSize] = useState(12);
 
   useEffect(() => {
@@ -74,6 +76,12 @@ export default function Insights() {
       GraphService.getInstance().subscribeToServiceInstability((data) => {
         if (JSON.stringify(data) !== JSON.stringify(instability)) {
           setInstability(data);
+        }
+      }),
+      GraphService.getInstance().subscribeToTestAPI((data) => {
+        if (JSON.stringify(data) !== JSON.stringify(testAPI)) {
+          settestAPI(data);
+          console.log(data);
         }
       }),
       ViewportUtils.getInstance().subscribe(([vw]) =>
@@ -114,7 +122,7 @@ export default function Insights() {
               "Service Coupling",
               coupling,
               BarChartUtils.SeriesFromServiceCoupling,
-              true,
+              false,
               BarChartUtils.ServiceCouplingOpts(coupling)
             )}
           ></ReactApexChart>
@@ -127,6 +135,17 @@ export default function Insights() {
               BarChartUtils.SeriesFromServiceInstability,
               false,
               BarChartUtils.ServiceInstabilityOpts(instability)
+            )}
+          ></ReactApexChart>
+        </Grid>
+        <Grid item xs={size}>
+          <ReactApexChart
+            {...BarChartUtils.CreateBarChart(
+              "Test Test",
+              testAPI,
+              BarChartUtils.SeriesFromServiceTestAPI,
+              false,
+              BarChartUtils.ServiceTestAPIOpts(testAPI)
             )}
           ></ReactApexChart>
         </Grid>
