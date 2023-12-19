@@ -3,12 +3,13 @@ export type TLineChartDataFields =
   | "requestErrors"
   | "serverErrors"
   | "latencyCV"
+  | "latencyMean"
   | "risk";
 
 export type TLineChartData = {
   dates: number[];
   services: string[];
-  metrics: [number, number, number, number, number][][];
+  metrics: [number, number, number, number, number, number][][];
 };
 
 const FieldIndex = [
@@ -16,6 +17,7 @@ const FieldIndex = [
   "requestErrors",
   "serverErrors",
   "latencyCV",
+  "latencyMean",
   "risk",
 ];
 

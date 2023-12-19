@@ -122,7 +122,7 @@ export default function Insights() {
               "Service Coupling",
               coupling,
               BarChartUtils.SeriesFromServiceCoupling,
-              false,
+              true,
               BarChartUtils.ServiceCouplingOpts(coupling)
             )}
           ></ReactApexChart>

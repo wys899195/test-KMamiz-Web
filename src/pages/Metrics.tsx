@@ -53,6 +53,7 @@ export default function Metrics() {
     { name: "RequestErrors", field: "requestErrors" },
     { name: "ServerErrors", field: "serverErrors" },
     { name: "Latency (Coefficient of Variation)", field: "latencyCV" },
+    { name: "Latency (Mean)(單位：毫秒) test ", field: "latencyMean" }
   ];
 
   return (
