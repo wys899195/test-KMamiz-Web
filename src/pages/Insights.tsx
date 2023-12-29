@@ -11,6 +11,7 @@ import { TTotalServiceInterfaceCohesion } from "../entities/TTotalServiceInterfa
 import { TServiceInstability } from "../entities/TServiceInstability";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
 import { TServiceTestAPI } from "../entities/TServiceTestAPI";
+import {TStatistics} from "../entities/TStatistics";
 import ViewportUtils from "../classes/ViewportUtils";
 
 const useStyles = makeStyles(() => ({
@@ -49,6 +50,8 @@ export default function Insights() {
   const [coupling, setCoupling] = useState<TServiceCoupling[]>([]);
   const [instability, setInstability] = useState<TServiceInstability[]>([]);
   const [testAPI, settestAPI] = useState<TServiceTestAPI []>([]);
+  // const [serviceStatistics,setServiceStatistics] = useState<TStatistics>();
+  // const [lastTimes, setLastTimes] = useState<number>(0);
   const [size, setSize] = useState(12);
 
   useEffect(() => {
@@ -81,9 +84,16 @@ export default function Insights() {
       GraphService.getInstance().subscribeToTestAPI((data) => {
         if (JSON.stringify(data) !== JSON.stringify(testAPI)) {
           settestAPI(data);
-          console.log(data);
         }
       }),
+      // GraphService.getInstance().subscribeToServiceHistoricalStatistics(
+      //   setServiceStatistics
+      // ),
+      // GraphService.getInstance().subscribeToServiceHistoricalStatistics((data) => {
+      //   if (JSON.stringify(data) !== JSON.stringify(serviceStatistics)) {
+      //     setServiceStatistics(data);
+      //   }
+      // }),
       ViewportUtils.getInstance().subscribe(([vw]) =>
         setSize(vw > 1500 ? 6 : 12)
       ),

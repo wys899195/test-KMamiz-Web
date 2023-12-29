@@ -6,6 +6,7 @@ import { TGraphData } from "../entities/TGraphData";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
 import { TServiceInstability } from "../entities/TServiceInstability";
 import { TServiceTestAPI} from "../entities/TServiceTestAPI";
+// import { TStatistics} from "../entities/TStatistics";
 import { TTotalServiceInterfaceCohesion } from "../entities/TTotalServiceInterfaceCohesion";
 import { DataView } from "./DataView";
 import { TRequestInfoChartData } from "../entities/TRequestInfoChartData";
@@ -129,8 +130,8 @@ export default class GraphService {
 
   subscribeToLineChartData(
     next: (data?: TLineChartData) => void,
-    uniqueServiceName?: string,
-    notBefore?: number
+    notBefore?: number,
+    uniqueServiceName?: string
   ) {
     const postfix = uniqueServiceName
       ? `/${encodeURIComponent(uniqueServiceName)}`
@@ -142,6 +143,22 @@ export default class GraphService {
       next(data)
     );
   }
+
+  // subscribeToServiceHistoricalStatistics(
+  //   next: (data?: TStatistics) => void,
+  //   notBefore?: number,
+  //   uniqueServiceName?: string
+  // ) {
+  //   const postfix = uniqueServiceName
+  //     ? `/${encodeURIComponent(uniqueServiceName)}`
+  //     : "";
+  //   const query = notBefore ? `?notBefore=${notBefore}` : "";
+  //   const path = `${this.prefix}/graph/statistics${postfix}${query}`;
+
+  //   return DataView.getInstance().subscribe<TStatistics>(path, (_, data) =>
+  //     next(data)
+  //   );
+  // }
 
   subscribeToDirectChord(next: (data?: TChordData) => void) {
     return GraphService.getInstance().subscribeToChord(
