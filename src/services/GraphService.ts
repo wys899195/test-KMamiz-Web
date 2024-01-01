@@ -6,7 +6,7 @@ import { TGraphData } from "../entities/TGraphData";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
 import { TServiceInstability } from "../entities/TServiceInstability";
 import { TServiceTestAPI} from "../entities/TServiceTestAPI";
-// import { TStatistics} from "../entities/TStatistics";
+import { TServiceStatistics} from "../entities/TStatistics";
 import { TTotalServiceInterfaceCohesion } from "../entities/TTotalServiceInterfaceCohesion";
 import { DataView } from "./DataView";
 import { TRequestInfoChartData } from "../entities/TRequestInfoChartData";
@@ -144,21 +144,18 @@ export default class GraphService {
     );
   }
 
-  // subscribeToServiceHistoricalStatistics(
-  //   next: (data?: TStatistics) => void,
-  //   notBefore?: number,
-  //   uniqueServiceName?: string
-  // ) {
-  //   const postfix = uniqueServiceName
-  //     ? `/${encodeURIComponent(uniqueServiceName)}`
-  //     : "";
-  //   const query = notBefore ? `?notBefore=${notBefore}` : "";
-  //   const path = `${this.prefix}/graph/statistics${postfix}${query}`;
-
-  //   return DataView.getInstance().subscribe<TStatistics>(path, (_, data) =>
-  //     next(data)
-  //   );
-  // }
+  subscribeToServiceHistoricalStatistics(
+    next: (data: TServiceStatistics[]) => void,
+    notBefore?: number,
+    uniqueServiceName?: string
+  ) {
+    const postfix = uniqueServiceName
+      ? `/${encodeURIComponent(uniqueServiceName)}`
+      : "";
+    const query = notBefore ? `?notBefore=${notBefore}` : "";
+    const path = `${this.prefix}/graph/statistics${postfix}${query}`;
+    return GraphService.getInstance().subscribeToArray(path, next);
+  }
 
   subscribeToDirectChord(next: (data?: TChordData) => void) {
     return GraphService.getInstance().subscribeToChord(

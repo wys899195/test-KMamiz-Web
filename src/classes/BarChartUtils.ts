@@ -3,6 +3,7 @@ import { Props } from "react-apexcharts";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
 import { TServiceTestAPI } from "../entities/TServiceTestAPI";
 import { TServiceInstability } from "../entities/TServiceInstability";
+import {TServiceStatistics} from "../entities/TStatistics";
 import { TTotalServiceInterfaceCohesion } from "../entities/TTotalServiceInterfaceCohesion";
 import { Color } from "./ColorUtils";
 
@@ -344,6 +345,74 @@ export default class BarChartUtils {
     };
   }
 
+  static ServiceStatisticsOpts(
+    statistics: TServiceStatistics[]
+  ): ApexOptions {
+    const base = BarChartUtils.StackMixedChartOverwriteOpts(
+      "Absolute Criticality (ACS)",
+      statistics,
+      {
+        x: (d) => d.name,
+        y: (d) => d.serverErrorRate,
+        markerLabel: (d) =>
+          `ACS: ${BarChartUtils.roundToDisplay(d.serverErrorRate)}`,
+        tooltip: (y, seriesIndex, dataPointIndex) => {
+          if (seriesIndex === 2) {
+            const c = BarChartUtils.roundToDisplay(
+              statistics[dataPointIndex].serverErrorRate
+            );
+            return c.toString();
+          }
+          return y.toString();
+        },
+      },
+      2
+    );
+
+    const { maxY, maxRY } = statistics.reduce(
+      ({ maxY, maxRY }, { latencyMean,serverErrorRate, requestErrorsRate}) => ({
+        maxY: Math.max(maxY, latencyMean),
+        maxRY: Math.max(maxRY, Math.max(serverErrorRate,requestErrorsRate)),
+      }),
+      { maxY: 0, maxRY: 0 }
+    );
+
+    return {
+      ...base,
+      yaxis: [
+        {
+          title: {
+            text: "latencyMean",
+            style: {
+              color: BarChartUtils.stringToColorHex("latencyMean"),
+            },
+          },
+          ...BarChartUtils.generateTick(maxY),
+        },
+        {
+          opposite: true,
+          title: {
+            text: "serverErrorRate",
+            style: {
+              color: BarChartUtils.stringToColorHex("serverErrorRate"),
+            },
+          },
+          ...BarChartUtils.generateTick(maxRY),
+        },
+        {
+          opposite: true,
+          title: {
+            text: "requestErrorsRate",
+            style: {
+              color: BarChartUtils.stringToColorHex("requestErrorsRate"),
+            },
+          },
+          ...BarChartUtils.generateTick(maxRY),
+        },
+      ],
+    };
+  }
+
   static ServiceInstabilityOpts(
     instability: TServiceInstability[]
   ): ApexOptions {
@@ -453,6 +522,25 @@ export default class BarChartUtils {
       },
     ];
     const base = BarChartUtils.mapFieldsToSeriesForTestAPI(fields, testapi);
+    return BarChartUtils.markFieldToLine("", base);
+  }
+
+  static SeriesFromServiceStatistics(statistics: TServiceStatistics[]) {
+    const fields = [
+      {
+        f: "latencyMean",
+        name: "latencyMean",
+      },
+      {
+        f: "serverErrorRate",
+        name: "serverErrorRate",
+      },
+      {
+        f: "requestErrorsRate",
+        name: "requestErrorsRate",
+      },
+    ];
+    const base = BarChartUtils.mapFieldsToSeries(fields, statistics);
     return BarChartUtils.markFieldToLine("", base);
   }
 
