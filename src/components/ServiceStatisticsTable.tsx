@@ -36,7 +36,7 @@ const StyledTableRow = withStyles(() =>
   }),
 )(TableRow);
 
-export default function CustomTable({ servicesStatistics }: TStatistics) {
+export default function ServiceStatisticsTable({ servicesStatistics }: TStatistics) {
   return (
     <TableContainer component={Paper} style={{ minHeight: 300,maxHeight: 300, overflowY: 'auto',marginTop: 20  }}>
       <Table stickyHeader>
@@ -51,7 +51,7 @@ export default function CustomTable({ servicesStatistics }: TStatistics) {
         <TableBody>
         {servicesStatistics.length === 0 ? (
           <StyledTableRow>
-            <StyledTableCell colSpan={4} style={{ textAlign: 'center' }}>目前尚歷史統計資料</StyledTableCell>
+            <StyledTableCell colSpan={4} style={{ textAlign: 'center' }}>尚無歷史統計資料</StyledTableCell>
           </StyledTableRow>
         ):(
           servicesStatistics.map((item) => (

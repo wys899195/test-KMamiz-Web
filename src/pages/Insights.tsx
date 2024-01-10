@@ -27,7 +27,7 @@ import { TServiceCoupling } from "../entities/TServiceCoupling";
 import { TServiceTestAPI } from "../entities/TServiceTestAPI";
 import {TStatistics,TServiceStatistics} from "../entities/TStatistics";
 import ViewportUtils from "../classes/ViewportUtils";
-import CustomTable from './Table';
+import ServiceStatisticsTable from '../components/ServiceStatisticsTable';
 const useStyles = makeStyles(() => ({
   root: {
     width: "100%",
@@ -249,7 +249,7 @@ export default function Insights() {
             </MenuItem>
             </Select>
           </FormControl>
-          <CustomTable servicesStatistics={statistics} />
+          <ServiceStatisticsTable servicesStatistics={statistics} />
         </Grid>
         <Grid item xs={0.5}></Grid>
 

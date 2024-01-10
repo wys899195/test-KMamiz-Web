@@ -6,6 +6,7 @@ import Header from "./components/Header";
 import Loading from "./components/Loading";
 
 const DependencyGraph = lazy(() => import("./pages/DependencyGraph"));
+const TaggedDependencyGraph = lazy(() => import("./pages/TaggedDependencyGraph"));
 const Metrics = lazy(() => import("./pages/Metrics"));
 const Insights = lazy(() => import("./pages/Insights"));
 const Endpoints = lazy(() => import("./pages/Endpoints"));
@@ -19,6 +20,7 @@ ReactDOM.render(
       <Suspense fallback={<Loading />}>
         <Routes>
           <Route path="/" element={<DependencyGraph />} />
+          <Route path="/taggedDependencyGraph" element={<TaggedDependencyGraph />} />
           <Route path="/metrics" element={<Metrics />} />
           <Route path="/insights" element={<Insights />} />
           <Route path="/endpoints" element={<Endpoints />} />
