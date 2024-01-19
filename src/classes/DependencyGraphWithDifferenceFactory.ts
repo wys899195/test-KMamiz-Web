@@ -1,4 +1,4 @@
-import { DependencyGraphWithDifferenceUtils, GraphDifferenceInfo } from "./DependencyGraphWithDifferenceUtils";
+import { DependencyGraphUtils, GraphDifferenceInfo } from "./DependencyGraphUtils";
 
 export class DependencyGraphWithDifferenceFactory {
   private constructor() {}
@@ -9,7 +9,7 @@ export class DependencyGraphWithDifferenceFactory {
   ) {
     const { addedNodeIds, deletedNodeIds } = graphDifferenceInfo;
     return {
-      ...DependencyGraphWithDifferenceUtils.GraphBasicSettings,
+      ...DependencyGraphUtils.GraphBasicSettings,
       linkDirectionalArrowLength: (link: any) =>
         3,
       linkWidth: (link: any) => 
@@ -17,7 +17,7 @@ export class DependencyGraphWithDifferenceFactory {
       linkDirectionalParticleWidth: (link: any) =>
         4,
       nodeCanvasObject: (node: any, ctx: any) =>
-        DependencyGraphWithDifferenceUtils.PaintNodeRingForShowDifference(
+        DependencyGraphUtils.PaintNodeRingForShowDifference(
           showDifference,
           node,
           ctx,

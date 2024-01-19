@@ -8,6 +8,11 @@ export type HighlightInfo = {
   focusNode: any;
 };
 
+export type GraphDifferenceInfo = {
+  addedNodeIds: Set<string>;
+  deletedNodeIds: Set<string>;
+};
+
 const useHoverHighlight = (): [
   HighlightInfo,
   Dispatch<SetStateAction<HighlightInfo>>
@@ -18,6 +23,17 @@ const useHoverHighlight = (): [
     focusNode: null,
   });
   return [highlight, setHighlight];
+};
+
+const useGraphDifference = (): [
+  GraphDifferenceInfo,
+  Dispatch<SetStateAction<GraphDifferenceInfo>>
+] => {
+  const [graphDifference, setGraphDifference] = useState<GraphDifferenceInfo>({
+    addedNodeIds: new Set<string>(),
+    deletedNodeIds: new Set<string>(),
+  });
+  return [graphDifference, setGraphDifference];
 };
 
 export class DependencyGraphUtils {
@@ -58,6 +74,22 @@ export class DependencyGraphUtils {
       });
     });
     return graphData;
+  }
+
+  static CompareTwoGraphData(latestData:TGraphData,taggedData:TGraphData):GraphDifferenceInfo{
+    if (!latestData || !taggedData){
+      return {
+        addedNodeIds: new Set<string>(),
+        deletedNodeIds: new Set<string>(),
+      }
+    }else{
+      const nodeIdsInLatestData: Set<string> = new Set(latestData.nodes.map(node => node.id));
+      const nodeIdsInTaggedData: Set<string> = new Set(taggedData.nodes.map(node => node.id));
+      return {
+        addedNodeIds: new Set([...nodeIdsInTaggedData].filter(id => !nodeIdsInLatestData.has(id))),
+        deletedNodeIds: new Set([...nodeIdsInLatestData].filter(id => !nodeIdsInTaggedData.has(id))),
+      }
+    }
   }
 
   static DrawHexagon(x: any, y: any, r: number, ctx: CanvasRenderingContext2D) {
@@ -167,6 +199,47 @@ export class DependencyGraphUtils {
     DependencyGraphUtils.PaintNode(node, color.hex, ctx);
   }
 
+  static PaintNodeRingForShowDifference(
+    showDifference: boolean,
+    node: any,
+    ctx: CanvasRenderingContext2D,
+    isAddedNode: boolean,
+    isDeletedNode: boolean
+  ) {
+    // add ring just for difference nodes
+    if (!showDifference || isAddedNode && isDeletedNode){
+      // do nothing
+    }
+    else if(isAddedNode || isDeletedNode){
+      if (isAddedNode){
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+      }
+      else if(isDeletedNode){
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+      }
+      const { x, y } = node;
+      ctx.beginPath();
+      if (node.id === node.group) {
+        const r = DependencyGraphUtils.GraphBasicSettings.nodeRelSize * 1.10;
+        DependencyGraphUtils.DrawHexagon(x, y, r, ctx);
+      } else {
+        ctx.arc(
+          x,
+          y,
+          DependencyGraphUtils.GraphBasicSettings.nodeRelSize * 1.9,
+          0,
+          2 * Math.PI,
+          false
+        );
+      }
+      ctx.fill();
+    }
+
+    // paint underlying style on top of ring
+    const color = Color.generateFromString(node.group);
+    DependencyGraphUtils.PaintNode(node, color.hex, ctx);
+  }
+
   static ZoomOnClick(node: any, graphRef: any) {
     if (!graphRef.current) return;
     graphRef.current.centerAt(node.x, node.y, 800);
@@ -175,3 +248,5 @@ export class DependencyGraphUtils {
 }
 
 export { useHoverHighlight };
+
+export { useGraphDifference };

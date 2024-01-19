@@ -27,8 +27,8 @@ import {
 import { DependencyGraphWithDifferenceFactory } from "../classes/DependencyGraphWithDifferenceFactory";
 import {
   useGraphDifference,
-  DependencyGraphWithDifferenceUtils,
-} from "../classes/DependencyGraphWithDifferenceUtils";
+  DependencyGraphUtils,
+} from "../classes/DependencyGraphUtils";
 import ViewportUtils from "../classes/ViewportUtils";
 import GraphService from "../services/GraphService";
 import Loading from "../components/Loading";
@@ -62,7 +62,7 @@ const useStyles = makeStyles(() => ({
   canvas:{
     margin:'0.6em 0.6em 0.6em 0.6em',
     border: '0.08em solid #ccc',
-    boxShadow: '0.6em 0.6em 0.5em rgba(0, 0, 0, 0.1)', // 添加陰影
+    boxShadow: '0.6em 0.6em 0.5em rgba(0, 0, 0, 0.1)',
     float:'left',
   },
   canvasTitle:{
@@ -157,7 +157,7 @@ export default function TaggedDependencyGraph() {
           });
         }
         rawDataRef.current = nextRawData;
-        setData(DependencyGraphWithDifferenceUtils.ProcessData(nextData));
+        setData(DependencyGraphUtils.ProcessData(nextData));
       }
     });
     GraphService.getInstance().getTaggedDependencyGraph(showEndpoint,tag).then((nextTaggedData) => {
@@ -176,14 +176,14 @@ export default function TaggedDependencyGraph() {
         }
         taggedRawDataRef.current = nextTaggedRawData;
         ;
-        setTaggedData(DependencyGraphWithDifferenceUtils.ProcessData(nextTaggedData));
+        setTaggedData(DependencyGraphUtils.ProcessData(nextTaggedData));
       }
     });
   }, [showEndpoint,showDifference,tag]);
 
   useEffect(() => {
     if(data && taggedData){
-      setGraphDifferenceInfo(DependencyGraphWithDifferenceUtils.CompareTwoGraphData(data,taggedData))
+      setGraphDifferenceInfo(DependencyGraphUtils.CompareTwoGraphData(data,taggedData))
     }
   }, [data,taggedData]);
 
@@ -205,7 +205,6 @@ export default function TaggedDependencyGraph() {
   };
 
   
-
   return (
     <div className={classes.root}>
       <div className={classes.canvasContainer}> 
