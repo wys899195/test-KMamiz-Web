@@ -24,8 +24,7 @@ import BarChartUtils from "../classes/BarChartUtils";
 import { TTotalServiceInterfaceCohesion } from "../entities/TTotalServiceInterfaceCohesion";
 import { TServiceInstability } from "../entities/TServiceInstability";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
-import { TServiceTestAPI } from "../entities/TServiceTestAPI";
-import {TStatistics,TServiceStatistics} from "../entities/TStatistics";
+import { TServiceStatistics } from "../entities/TStatistics";
 import ViewportUtils from "../classes/ViewportUtils";
 import ServiceStatisticsTable from '../components/ServiceStatisticsTable';
 const useStyles = makeStyles(() => ({
@@ -104,11 +103,6 @@ export default function Insights() {
           setInstability(data);
         }
       }),
-      // GraphService.getInstance().subscribeToTestAPI((data) => {
-      //   if (JSON.stringify(data) !== JSON.stringify(testAPI)) {
-      //     settestAPI(data);
-      //   }
-      // }),
       ViewportUtils.getInstance().subscribe(([vw]) =>
         setSize(vw > 1500 ? 6 : 12)
       ),
@@ -173,45 +167,6 @@ export default function Insights() {
             )}
           ></ReactApexChart>
         </Grid>
-        {/* <Grid item xs={size}>
-          <ReactApexChart
-            {...BarChartUtils.CreateBarChart(
-              "Test statistics",
-              statistics,
-              BarChartUtils.SeriesFromServiceStatistics,
-              false,
-              BarChartUtils.ServiceStatisticsOpts(statistics)
-            )}
-          ></ReactApexChart>
-        </Grid> */}
-        {/* <Grid item xs={size}>
-          <TableContainer component={Paper}>
-            <Table  size="small" aria-label="a dense table">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Dessert (100g serving)</TableCell>
-                  <TableCell align="right">Calories</TableCell>
-                  <TableCell align="right">Fat&nbsp;(g)</TableCell>
-                  <TableCell align="right">Carbs&nbsp;(g)</TableCell>
-                  <TableCell align="right">Protein&nbsp;(g)</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {rows.map((row) => (
-                  <TableRow key={row.name}>
-                    <TableCell component="th" scope="row">
-                      {row.name}
-                    </TableCell>
-                    <TableCell align="right">{row.calories}</TableCell>
-                    <TableCell align="right">{row.fat}</TableCell>
-                    <TableCell align="right">{row.carbs}</TableCell>
-                    <TableCell align="right">{row.protein}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Grid> */}
         <Grid item xs={12}></Grid>
         <Grid item xs={0.5}></Grid>
         <Grid item xs={11}>

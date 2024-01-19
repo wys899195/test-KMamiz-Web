@@ -6,7 +6,6 @@ import { TChordData, TChordRadius } from "../entities/TChordData";
 import { TGraphData } from "../entities/TGraphData";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
 import { TServiceInstability } from "../entities/TServiceInstability";
-import { TServiceTestAPI} from "../entities/TServiceTestAPI";
 import { TServiceStatistics} from "../entities/TStatistics";
 import { TTotalServiceInterfaceCohesion } from "../entities/TTotalServiceInterfaceCohesion";
 import { DataView } from "./DataView";
@@ -261,16 +260,6 @@ export default class GraphService {
     namespace?: string
   ) {
     const path = `${this.prefix}/graph/coupling${
-      namespace ? `/${encodeURIComponent(namespace)}` : ""
-    }`;
-    return GraphService.getInstance().subscribeToArray(path, next);
-  }
-
-  subscribeToTestAPI(
-    next: (data: TServiceTestAPI[]) => void,
-    namespace?: string
-  ) {
-    const path = `${this.prefix}/graph/testAPI${
       namespace ? `/${encodeURIComponent(namespace)}` : ""
     }`;
     return GraphService.getInstance().subscribeToArray(path, next);
