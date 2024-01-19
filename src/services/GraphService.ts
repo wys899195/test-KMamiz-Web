@@ -134,7 +134,6 @@ export default class GraphService {
   }
 
   async addTaggedDependencyGraphData(tagged: TTaggedGraphData) {
-    console.log("addTaggedDependencyGraphData")
     const res = await fetch(`${this.prefix}/graph/taggedDependency/tags`, {
       method: "POST",
       body: JSON.stringify(tagged),
