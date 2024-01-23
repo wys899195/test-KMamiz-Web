@@ -2,17 +2,12 @@ import { Dispatch, SetStateAction, useState } from "react";
 import { TGraphData, TLink, TNode } from "../entities/TGraphData";
 import { Color } from "./ColorUtils";
 
+// to highlight node in the dependency graph
 export type HighlightInfo = {
   highlightLinks: Set<any>;
   highlightNodes: Set<any>;
   focusNode: any;
 };
-
-export type GraphDifferenceInfo = {
-  addedNodeIds: Set<string>;
-  deletedNodeIds: Set<string>;
-};
-
 const useHoverHighlight = (): [
   HighlightInfo,
   Dispatch<SetStateAction<HighlightInfo>>
@@ -25,16 +20,44 @@ const useHoverHighlight = (): [
   return [highlight, setHighlight];
 };
 
+
+// to compare two dependency graphs
+const state = [
+  'added',
+  'modified',
+  'deleted'
+] as const;
+export type GraphDifferenceState = typeof state[number];
+
+type NodesInfo = {
+  id:string,
+  name:string,
+}
+type NodeGroupInfo = {
+  ServiceNodeState:GraphDifferenceState,
+  ServiceNodeId:string, //service node id
+  groupName:string, //service node name
+  endPointNodes:Array<NodesInfo>
+}
+export type GraphDifferenceInfo = {
+  addedNodes: Set<any>; // display added nodes at the dependency graph
+  deletedNodes: Set<any>; // display deleted nodes at the dependency graph
+  addedNodesAfterGrouping: Array<NodeGroupInfo>; // display differences in GraphDiffTabs
+  deletedNodesAfterGrouping: Array<NodeGroupInfo>; // display differences in GraphDiffTabs
+};
 const useGraphDifference = (): [
   GraphDifferenceInfo,
   Dispatch<SetStateAction<GraphDifferenceInfo>>
 ] => {
   const [graphDifference, setGraphDifference] = useState<GraphDifferenceInfo>({
-    addedNodeIds: new Set<string>(),
-    deletedNodeIds: new Set<string>(),
+    addedNodes: new Set<any>(),
+    deletedNodes: new Set<any>(),
+    addedNodesAfterGrouping: new Array<NodeGroupInfo>(),
+    deletedNodesAfterGrouping: new Array<NodeGroupInfo>(),
   });
   return [graphDifference, setGraphDifference];
 };
+
 
 export class DependencyGraphUtils {
   private constructor() {}
@@ -79,15 +102,73 @@ export class DependencyGraphUtils {
   static CompareTwoGraphData(latestData:TGraphData,taggedData:TGraphData):GraphDifferenceInfo{
     if (!latestData || !taggedData){
       return {
-        addedNodeIds: new Set<string>(),
-        deletedNodeIds: new Set<string>(),
+        addedNodes: new Set<any>(),
+        deletedNodes: new Set<any>(),
+        addedNodesAfterGrouping: new Array<NodeGroupInfo>(),
+        deletedNodesAfterGrouping: new Array<NodeGroupInfo>(),
       }
     }else{
-      const nodeIdsInLatestData: Set<string> = new Set(latestData.nodes.map(node => node.id));
-      const nodeIdsInTaggedData: Set<string> = new Set(taggedData.nodes.map(node => node.id));
+      //excluding external nodes
+      const nodeIdsInLatestData: string[] = latestData.nodes.map(node => node.id).filter(id => id !== "null");
+      const nodeIdsInTaggedData: string[] = taggedData.nodes.map(node => node.id).filter(id => id !== "null");
+      const addedNodeIds: Set<string> = new Set(nodeIdsInLatestData.filter(id => !nodeIdsInTaggedData.includes(id)));
+      const deletedNodeIds: Set<string> = new Set(nodeIdsInTaggedData.filter(id => !nodeIdsInLatestData.includes(id)));
+
+      const addedNodes: Set<any> = new Set(latestData.nodes.filter(node => addedNodeIds.has(node.id)));
+      const deletedNodes: Set<any> = new Set(taggedData.nodes.filter(node => deletedNodeIds.has(node.id)));
+
+      const addedNodeGroupNames: Set<string> = new Set([...addedNodes].map(node => node.group));
+      const deletedNodeGroupNames: Set<string> = new Set([...deletedNodes].map(node => node.group));
+
+      const addedNodesAfterGrouping:Array<NodeGroupInfo> = [...addedNodeGroupNames]
+        .map(group =>{
+          const isServiceNodeInaddedNodes:boolean = 
+            [...addedNodes].find(node => node.id === group) !== undefined;
+          
+          return {
+            ServiceNodeState:isServiceNodeInaddedNodes ? 'added' : 'modified',
+            ServiceNodeId:group,
+            groupName:group.replace("\t", "."),
+            endPointNodes:[...addedNodes]
+              .filter(node => node.group === group && node.group !== node.id)
+              .map(node => {
+                return {
+                  id:node.id,
+                  name:node.name
+                }
+              })
+          }
+        }
+      )
+      const deletedNodesAfterGrouping:Array<NodeGroupInfo> = [...deletedNodeGroupNames]
+        .map(group =>{
+          const isServiceNodeIndeletedNodes:boolean = 
+            [...deletedNodes].find(node => node.id === group) !== undefined;
+          
+          return {
+            ServiceNodeState:isServiceNodeIndeletedNodes ? 'deleted' : 'modified',
+            ServiceNodeId:group,
+            groupName:group.replace("\t", "."),
+            endPointNodes:[...deletedNodes]
+              .filter(node => node.group === group && node.group !== node.id)
+              .map(node => {
+                return {
+                  id:node.id,
+                  name:node.name
+                }
+              })
+          }
+        }
+      )
+      console.log("addedNodesAfterGrouping")
+      console.log(addedNodesAfterGrouping)
+      console.log("deletedNodesAfterGrouping")
+      console.log(deletedNodesAfterGrouping)
       return {
-        addedNodeIds: new Set([...nodeIdsInTaggedData].filter(id => !nodeIdsInLatestData.has(id))),
-        deletedNodeIds: new Set([...nodeIdsInLatestData].filter(id => !nodeIdsInTaggedData.has(id))),
+        addedNodes: addedNodes,
+        deletedNodes: deletedNodes,
+        addedNodesAfterGrouping: addedNodesAfterGrouping,
+        deletedNodesAfterGrouping: deletedNodesAfterGrouping
       }
     }
   }
@@ -212,10 +293,10 @@ export class DependencyGraphUtils {
     }
     else if(isAddedNode || isDeletedNode){
       if (isAddedNode){
-        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+        ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
       }
       else if(isDeletedNode){
-        ctx.fillStyle = 'rgba(0, 255, 0, 0.5)';
+        ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
       }
       const { x, y } = node;
       ctx.beginPath();

@@ -23,6 +23,7 @@ import {
   MenuItem,
   Select,
   InputLabel,
+  Divider,
 } from "@mui/material";
 import { DependencyGraphWithDifferenceFactory } from "../classes/DependencyGraphWithDifferenceFactory";
 import {
@@ -34,6 +35,8 @@ import GraphService from "../services/GraphService";
 import Loading from "../components/Loading";
 import { useLocation, useNavigate } from "react-router-dom";
 
+
+import GraphDiffTabs from '../components/GraphDiffTabs';
 const ForceGraph2D = lazy(() => import("react-force-graph-2d"));
 
 const useStyles = makeStyles(() => ({
@@ -54,22 +57,32 @@ const useStyles = makeStyles(() => ({
     right: "13.5em",
     paddingLeft: "0.8em",
   },
-  canvasContainer:{
-    margin:'3.5em 0em 0em 0em',
+  canvasContainer: {
     display: 'flex',
     flexWrap: 'wrap',
+    margin:'3.5em 0.0em 0.3em 0.0em',
   },
-  canvas:{
-    margin:'0.6em 0.6em 0.6em 0.6em',
+  canvas: {
+    margin:'0.3em 0.2em 0.3em 0.2em',
     border: '0.08em solid #ccc',
-    boxShadow: '0.6em 0.6em 0.5em rgba(0, 0, 0, 0.1)',
+    boxShadow: '0.4em 0em 0.5em rgba(0, 0, 0, 0.1)',
     float:'left',
   },
-  canvasTitle:{
+  canvasTitle: {
     margin:'1.2em 0em 0em 0em',
   },
-  cavasHeader:{
-    borderBottom: '0.125em dotted #ccc',
+  cavasHeader: {
+    borderBottom: '0.08em solid #ccc',
+    boxShadow: '0.0em  0.4em 0.5em rgba(0, 0, 0, 0.1)',
+  },
+  cavasFooter: {
+    borderTop: '0.2em dashed #ccc',
+  },
+  displayGraphDiffBlock: {
+    flex:1,
+    margin:'0.3em 0.2em 0.3em 0.2em',
+    border: '0.08em solid #ccc',
+    boxShadow: '0.4em 0em 0.5em rgba(0, 0, 0, 0.1)'
   },
   actions: {
     height: "3em",
@@ -80,8 +93,6 @@ const useStyles = makeStyles(() => ({
     gap: "1em",
     padding: "1em",
   },
-
-
 }));
 
 export default function TaggedDependencyGraph() {
@@ -94,8 +105,6 @@ export default function TaggedDependencyGraph() {
   const { search } = useLocation();
   const query = useMemo(() => new URLSearchParams(search), [search]);
   const [size, setSize] = useState([0, 0]);
-  const [canvasWidthRate, setCanvasWidthRate] = useState(0.5);
-  const [canvasHeightRate, setCanvasHeightRate] = useState(0.65);
   const [data, setData] = useState<any>();
   const [dataBeforeProcess, setDataBeforeProcess] = useState<any>();;
   const [taggedData, setTaggedData] = useState<any>();
@@ -103,18 +112,21 @@ export default function TaggedDependencyGraph() {
   const [showEndpoint, setShowEndpoint] = useState(true);
   const [showDifference, setShowDifference] = useState(true);
 
+  const [canvasContainerflexDirection, setCanvasContainerflexDirection] = useState<string>('row');
+  const [canvasWidthRate, setCanvasWidthRate] = useState(0.4);
+  const [canvasHeightRate, setCanvasHeightRate] = useState(0.65);
+
   const tag = query.get("tag");
   const [tags, setTags] = useState<string[]>([]);
   const [newVersion, setNewVersion] = useState<string>("");
 
   useEffect(() => {
     const unsubscribe = [
-      ViewportUtils.getInstance().subscribe(([vw]) =>
-        setCanvasWidthRate(vw > 1250 ? 0.5 : 1)
-      ),
-      ViewportUtils.getInstance().subscribe(([vw]) =>
-        setCanvasHeightRate(vw > 1250 ? 0.65 : 0.45)
-      )
+      ViewportUtils.getInstance().subscribe(([vw]) =>{
+        setCanvasWidthRate(vw > 1550 ? 0.4 : 1);
+        setCanvasHeightRate(vw > 1550 ? 0.65 : 0.45);
+        setCanvasContainerflexDirection(vw > 1250 ? 'row' : 'column');
+      }),
     ];
     return () => {
       unsubscribe.forEach((un) => un());
@@ -184,9 +196,9 @@ export default function TaggedDependencyGraph() {
   useEffect(() => {
     if(data && taggedData){
       setGraphDifferenceInfo(DependencyGraphUtils.CompareTwoGraphData(data,taggedData))
+      // DependencyGraphUtils.DifferenceInfoToList(graphDifferenceInfo)
     }
   }, [data,taggedData]);
-
 
   const createNewVersion = async () => {
     if (!dataBeforeProcess || !newVersion) return;
@@ -204,103 +216,113 @@ export default function TaggedDependencyGraph() {
     navigate(`/taggedDependencyGraph`);
   };
 
-  
   return (
     <div className={classes.root}>
-      <div className={classes.canvasContainer}> 
-        <div className={classes.canvas}>
-          <Grid container padding={1} className={classes.cavasHeader}>
-            <Grid item xs={5}>
-              <Typography variant="h5" className={classes.canvasTitle}>Latest Version</Typography>
-            </Grid>
-            <Grid item xs={7}>
-              <Card variant="outlined" className={classes.actions}>
-                <TextField
-                  fullWidth
-                  label="Save as Historical Version"
-                  variant="outlined"
-                  value={newVersion}
-                  onChange={(e) => setNewVersion(e.target.value)}
-                />
-                <Tooltip title="Create a new version">
-                  <Button variant="contained" onClick={() => createNewVersion()}>
-                    Create
-                  </Button>
-                </Tooltip>
-              </Card>
-            </Grid>
-          </Grid>
-          <Suspense fallback={<Loading />}>
-            <ForceGraph2D
-              ref={graphRef}
-              width={size[0] * canvasWidthRate - 30}
-              height={size[1] * canvasHeightRate - 50}
-              graphData={data}
-              {...DependencyGraphWithDifferenceFactory.Create(
-                showDifference,
-                graphDifferenceInfo
-              )}
-            />
-          </Suspense>
-        </div>
-        <div className={classes.canvas}>
-          <Grid container padding={1} className={classes.cavasHeader}>
-            <Grid item xs={5}>
-              <Typography variant="h5" className={classes.canvasTitle}>Historical Versions</Typography>
-            </Grid>
-            <Grid item xs={7}>
-              <Card variant="outlined" className={classes.actions}>
-                <FormControl fullWidth>
-                  <InputLabel id="tag-label">Selected Version</InputLabel>
-                  <Select
-                    labelId="tag-label"
-                    value={tag || "latest"}
-                    label="Selected Version"
-                    onChange={(e) => {
-                      const tag =
-                        e.target.value !== "latest"
-                          ? `?tag=${encodeURIComponent(e.target.value)}`
-                          : "";
-                      navigate(`/taggedDependencyGraph${tag}`);
-                    }}
-                  >
-                    <MenuItem value="latest">Latest</MenuItem>
-                    {tags.map((t, i) => (
-                      <MenuItem key={`tag-${i}`} value={t}>
-                        {t}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Tooltip title="Delete selected">
-                  <>
-                    <Button
-                      variant="contained"
-                      color="error"
-                      onClick={() => deleteVersion()}
-                      disabled={!tag || tag === "Latest"}
-                    >
-                      Delete
+        <div 
+          className={classes.canvasContainer} 
+          style={
+            canvasContainerflexDirection == 'row' 
+            ? { flexDirection: 'row' }
+            : { flexDirection: 'column' }
+          }> 
+          <div className={classes.canvas}>
+            <Grid container padding={1} className={classes.cavasHeader}>
+              <Grid item xs={5}>
+                <Typography variant="h5" className={classes.canvasTitle}>Latest Version</Typography>
+              </Grid>
+              <Grid item xs={7}>
+                <Card variant="outlined" className={classes.actions}>
+                  <TextField
+                    fullWidth
+                    label="Save as Historical Version"
+                    variant="outlined"
+                    value={newVersion}
+                    onChange={(e) => setNewVersion(e.target.value)}
+                  />
+                  <Tooltip title="Create a new version">
+                    <Button variant="contained" onClick={() => createNewVersion()}>
+                      Create
                     </Button>
-                  </>
-                </Tooltip>
-              </Card>
+                  </Tooltip>
+                </Card>
+              </Grid>
             </Grid>
-          </Grid>
-          <Suspense fallback={<Loading />}>
-            <ForceGraph2D
-              ref={taggedGraphRef}
-              width={size[0] * canvasWidthRate - 30}
-              height={size[1] * canvasHeightRate - 50}
-              graphData={taggedData}
-              {...DependencyGraphWithDifferenceFactory.Create(
-                showDifference,
-                graphDifferenceInfo
-              )}
-            />
-          </Suspense>
+            <Suspense fallback={<Loading />}>
+              <ForceGraph2D
+                ref={graphRef}
+                width={size[0] * canvasWidthRate - 30}
+                height={size[1] * canvasHeightRate - 50}
+                graphData={data}
+                {...DependencyGraphWithDifferenceFactory.Create(
+                  showDifference,
+                  graphDifferenceInfo
+                )}
+              />
+            </Suspense>
+          </div>
+          <div className={classes.canvas}>
+            <Grid container padding={1} className={classes.cavasHeader}>
+              <Grid item xs={5}>
+                <Typography variant="h5" className={classes.canvasTitle}>Historical Versions</Typography>
+              </Grid>
+              <Grid item xs={7}>
+                <Card variant="outlined" className={classes.actions}>
+                  <FormControl fullWidth>
+                    <InputLabel id="tag-label">Selected Version</InputLabel>
+                    <Select
+                      labelId="tag-label"
+                      value={tag || "latest"}
+                      label="Selected Version"
+                      onChange={(e) => {
+                        const tag =
+                          e.target.value !== "latest"
+                            ? `?tag=${encodeURIComponent(e.target.value)}`
+                            : "";
+                        navigate(`/taggedDependencyGraph${tag}`);
+                      }}
+                    >
+                      <MenuItem value="latest">Latest</MenuItem>
+                      {tags.map((t, i) => (
+                        <MenuItem key={`tag-${i}`} value={t}>
+                          {t}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Tooltip title="Delete selected">
+                    <>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        onClick={() => deleteVersion()}
+                        disabled={!tag || tag === "Latest"}
+                      >
+                        Delete
+                      </Button>
+                    </>
+                  </Tooltip>
+                </Card>
+              </Grid>
+            </Grid>
+            <Suspense fallback={<Loading />}>
+              <ForceGraph2D
+                ref={taggedGraphRef}
+                width={size[0] * canvasWidthRate - 30}
+                height={size[1] * canvasHeightRate - 50}
+                graphData={taggedData}
+                {...DependencyGraphWithDifferenceFactory.Create(
+                  showDifference,
+                  graphDifferenceInfo
+                )}
+              />
+            </Suspense>
+          </div>
+          <div className={classes.displayGraphDiffBlock}>
+            <GraphDiffTabs graphDifferenceInfo={graphDifferenceInfo} />
+          </div>
         </div>
-      </div>
+
+      
       <Card className={classes.switchEndpoint}>
         <FormGroup>
           <FormControlLabel
