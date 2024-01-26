@@ -7,7 +7,7 @@ export class DependencyGraphWithDifferenceFactory {
     showDifference:boolean,
     graphDifferenceInfo: GraphDifferenceInfo,
   ) {
-    const { addedNodes, deletedNodes } = graphDifferenceInfo;
+    const { addedNodeIds,deletedNodeIds } = graphDifferenceInfo;
     return {
       ...DependencyGraphUtils.GraphBasicSettings,
       linkDirectionalArrowLength: (link: any) =>
@@ -21,8 +21,8 @@ export class DependencyGraphWithDifferenceFactory {
           showDifference,
           node,
           ctx,
-          addedNodes.has(node),
-          deletedNodes.has(node)
+          addedNodeIds.has(node.id),
+          deletedNodeIds.has(node.id)
         ),
       onNodeClick: (node: any) => {},
       onNodeHover: (node: any) => {},

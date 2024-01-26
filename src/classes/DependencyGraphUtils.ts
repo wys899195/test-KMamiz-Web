@@ -37,21 +37,21 @@ type NodeGroupInfo = {
   ServiceNodeState:GraphDifferenceState,
   ServiceNodeId:string, //service node id
   groupName:string, //service node name
-  endPointNodes:Array<NodesInfo>
+  endPointNodesInfo:Array<NodesInfo>
 }
 export type GraphDifferenceInfo = {
-  addedNodes: Set<any>; // display added nodes at the dependency graph
-  deletedNodes: Set<any>; // display deleted nodes at the dependency graph
-  addedNodesAfterGrouping: Array<NodeGroupInfo>; // display differences in GraphDiffTabs
-  deletedNodesAfterGrouping: Array<NodeGroupInfo>; // display differences in GraphDiffTabs
+  addedNodeIds: Set<string>; // to display added nodes at the dependency graph
+  deletedNodeIds: Set<string>; // to display deleted nodes at the dependency graph
+  addedNodesAfterGrouping: Array<NodeGroupInfo>; // to display differences in GraphDiffTabs
+  deletedNodesAfterGrouping: Array<NodeGroupInfo>; // to display differences in GraphDiffTabs
 };
 const useGraphDifference = (): [
   GraphDifferenceInfo,
   Dispatch<SetStateAction<GraphDifferenceInfo>>
 ] => {
   const [graphDifference, setGraphDifference] = useState<GraphDifferenceInfo>({
-    addedNodes: new Set<any>(),
-    deletedNodes: new Set<any>(),
+    addedNodeIds: new Set<string>(),
+    deletedNodeIds: new Set<string>(),
     addedNodesAfterGrouping: new Array<NodeGroupInfo>(),
     deletedNodesAfterGrouping: new Array<NodeGroupInfo>(),
   });
@@ -102,8 +102,8 @@ export class DependencyGraphUtils {
   static CompareTwoGraphData(latestData:TGraphData,taggedData:TGraphData):GraphDifferenceInfo{
     if (!latestData || !taggedData){
       return {
-        addedNodes: new Set<any>(),
-        deletedNodes: new Set<any>(),
+        addedNodeIds: new Set<string>(),
+        deletedNodeIds: new Set<string>(),
         addedNodesAfterGrouping: new Array<NodeGroupInfo>(),
         deletedNodesAfterGrouping: new Array<NodeGroupInfo>(),
       }
@@ -129,7 +129,7 @@ export class DependencyGraphUtils {
             ServiceNodeState:isServiceNodeInaddedNodes ? 'added' : 'modified',
             ServiceNodeId:group,
             groupName:group.replace("\t", "."),
-            endPointNodes:[...addedNodes]
+            endPointNodesInfo:[...addedNodes]
               .filter(node => node.group === group && node.group !== node.id)
               .map(node => {
                 return {
@@ -149,7 +149,7 @@ export class DependencyGraphUtils {
             ServiceNodeState:isServiceNodeIndeletedNodes ? 'deleted' : 'modified',
             ServiceNodeId:group,
             groupName:group.replace("\t", "."),
-            endPointNodes:[...deletedNodes]
+            endPointNodesInfo:[...deletedNodes]
               .filter(node => node.group === group && node.group !== node.id)
               .map(node => {
                 return {
@@ -165,8 +165,8 @@ export class DependencyGraphUtils {
       console.log("deletedNodesAfterGrouping")
       console.log(deletedNodesAfterGrouping)
       return {
-        addedNodes: addedNodes,
-        deletedNodes: deletedNodes,
+        addedNodeIds: addedNodeIds,
+        deletedNodeIds: deletedNodeIds,
         addedNodesAfterGrouping: addedNodesAfterGrouping,
         deletedNodesAfterGrouping: deletedNodesAfterGrouping
       }

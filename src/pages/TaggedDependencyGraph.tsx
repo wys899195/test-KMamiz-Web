@@ -13,7 +13,6 @@ import {
   FormControlLabel, 
   FormGroup, 
   Switch,
-  Box, 
   Button,
   Grid, 
   Tooltip,
@@ -23,9 +22,10 @@ import {
   MenuItem,
   Select,
   InputLabel,
-  Divider,
 } from "@mui/material";
-import { DependencyGraphWithDifferenceFactory } from "../classes/DependencyGraphWithDifferenceFactory";
+import { 
+  DependencyGraphWithDifferenceFactory
+} from "../classes/DependencyGraphWithDifferenceFactory";
 import {
   useGraphDifference,
   DependencyGraphUtils,
@@ -33,6 +33,7 @@ import {
 import ViewportUtils from "../classes/ViewportUtils";
 import GraphService from "../services/GraphService";
 import Loading from "../components/Loading";
+import { TGraphData } from "../entities/TGraphData";
 import { useLocation, useNavigate } from "react-router-dom";
 
 
@@ -106,8 +107,9 @@ export default function TaggedDependencyGraph() {
   const query = useMemo(() => new URLSearchParams(search), [search]);
   const [size, setSize] = useState([0, 0]);
   const [data, setData] = useState<any>();
-  const [dataBeforeProcess, setDataBeforeProcess] = useState<any>();;
   const [taggedData, setTaggedData] = useState<any>();
+  const [dataBeforeProcess, setDataBeforeProcess] = useState<TGraphData | null>(null);
+  const [taggedDataBeforeProcess, setTaggedDataBeforeProcess] = useState<TGraphData | null>(null);
   const [graphDifferenceInfo, setGraphDifferenceInfo] = useGraphDifference();
   const [showEndpoint, setShowEndpoint] = useState(true);
   const [showDifference, setShowDifference] = useState(true);
@@ -123,7 +125,7 @@ export default function TaggedDependencyGraph() {
   useEffect(() => {
     const unsubscribe = [
       ViewportUtils.getInstance().subscribe(([vw]) =>{
-        setCanvasWidthRate(vw > 1550 ? 0.4 : 1);
+        setCanvasWidthRate(vw > 1550 ? (showDifference ? 0.4 : 0.5) : 1);
         setCanvasHeightRate(vw > 1550 ? 0.65 : 0.45);
         setCanvasContainerflexDirection(vw > 1250 ? 'row' : 'column');
       }),
@@ -131,7 +133,7 @@ export default function TaggedDependencyGraph() {
     return () => {
       unsubscribe.forEach((un) => un());
     };
-  }, []);
+  }, [showDifference]);
 
   useLayoutEffect(() => {
     const unsubscribe = [
@@ -152,6 +154,11 @@ export default function TaggedDependencyGraph() {
     GraphService.getInstance().getDependencyGraph(true).then((nextBeforeProcessData) => {
       if (nextBeforeProcessData){
         setDataBeforeProcess(nextBeforeProcessData);
+      }
+    });
+    GraphService.getInstance().getTaggedDependencyGraph(true,tag).then((nextTaggedDataBeforeProcess) => {
+      if (nextTaggedDataBeforeProcess){
+        setTaggedDataBeforeProcess(nextTaggedDataBeforeProcess);
       }
     });
     GraphService.getInstance().getDependencyGraph(showEndpoint).then((nextData) => {
@@ -194,11 +201,10 @@ export default function TaggedDependencyGraph() {
   }, [showEndpoint,showDifference,tag]);
 
   useEffect(() => {
-    if(data && taggedData){
-      setGraphDifferenceInfo(DependencyGraphUtils.CompareTwoGraphData(data,taggedData))
-      // DependencyGraphUtils.DifferenceInfoToList(graphDifferenceInfo)
+    if(showDifference && dataBeforeProcess && taggedDataBeforeProcess){
+      setGraphDifferenceInfo(DependencyGraphUtils.CompareTwoGraphData(dataBeforeProcess,taggedDataBeforeProcess))
     }
-  }, [data,taggedData]);
+  }, [dataBeforeProcess,taggedDataBeforeProcess]);
 
   const createNewVersion = async () => {
     if (!dataBeforeProcess || !newVersion) return;
@@ -317,7 +323,7 @@ export default function TaggedDependencyGraph() {
               />
             </Suspense>
           </div>
-          <div className={classes.displayGraphDiffBlock}>
+          <div className={classes.displayGraphDiffBlock} style = {showDifference ? {} : {display:'none'}}>
             <GraphDiffTabs graphDifferenceInfo={graphDifferenceInfo} />
           </div>
         </div>

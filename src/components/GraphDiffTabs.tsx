@@ -23,14 +23,21 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircle } from '@fortawesome/free-solid-svg-icons'
-import { faSquare,faSquarePlus,faSquareMinus,faSquareCaretUp } from '@fortawesome/free-regular-svg-icons'
-import { GraphDifferenceState,GraphDifferenceInfo } from "../classes/DependencyGraphUtils";
+import { 
+  faSquare,
+  faSquarePlus,
+  faSquareMinus,
+} from '@fortawesome/free-regular-svg-icons'
+import { 
+  GraphDifferenceState,
+  GraphDifferenceInfo 
+} from "../classes/DependencyGraphUtils";
 
 const useStyles = makeStyles(() => ({
   TabPanelHeader: {
-    backgroundColor:'lightGray',
+    backgroundColor:'#E8E9E8',
     textAlign:'center',
-    borderBottom: '0.2em solid #ccc',
+    borderBottom: '0.1em solid #ccc',
   },
   serviceGroupBlock: {
     display: 'flex',
@@ -130,7 +137,14 @@ function TabPanelInnerComponent(prop:TabPanelInnerComponentProps) {
   return(
     <div>
       <div className={classes.TabPanelHeader}>
-        { NodeGroupInfosFiltered.length } { prop.isModifiedBlock ? (prop.whichTab == 'added' ? " services add endpoint" : " services delete endpoint") : " new services" }
+        { NodeGroupInfosFiltered.length } 
+        { prop.isModifiedBlock 
+          ? (prop.whichTab == 'added' 
+              ? " services add endpoint" 
+              : " services delete endpoint") 
+          : (prop.whichTab == 'added' 
+          ? " added services" 
+          : " deleted services")  }
       </div>
       <div>
         {NodeGroupInfosFiltered
@@ -147,7 +161,7 @@ function TabPanelInnerComponent(prop:TabPanelInnerComponentProps) {
                 </div>
               </AccordionSummary>
               <AccordionDetails>
-                {groupInfo.endPointNodes.map((node) => (
+                {groupInfo.endPointNodesInfo.map((node) => (
                   <div className={classes.enpointGroupBlock}>
                     <Typography sx={{ color: 'text.secondary' }}>
                       <DiffIcon  state = {prop.whichTab} /> EP 

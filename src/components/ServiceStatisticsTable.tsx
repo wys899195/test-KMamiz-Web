@@ -58,8 +58,8 @@ export default function ServiceStatisticsTable({ servicesStatistics }: TStatisti
             <StyledTableRow key={item.uniqueServiceName+item.name}>
               <StyledTableCell>{item.name}</StyledTableCell>
               <StyledTableCell>{item.latencyMean.toFixed(2)} ms</StyledTableCell>
-              <StyledTableCell>{item.requestErrorsRate.toFixed(3)} %</StyledTableCell>
-              <StyledTableCell>{item.serverErrorRate.toFixed(3)} %</StyledTableCell>
+              <StyledTableCell>{(item.requestErrorsRate * 100).toFixed(3)} %</StyledTableCell>
+              <StyledTableCell>{(item.serverErrorRate * 100).toFixed(3)} %</StyledTableCell>
             </StyledTableRow>
           ))
         )}
