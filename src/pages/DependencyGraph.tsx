@@ -32,7 +32,7 @@ const useStyles = makeStyles(() => ({
   },
   switch: {
     position: "absolute",
-    top: "5em",
+    top: "4.5em",
     right: "1em",
     paddingLeft: "0.8em",
   },

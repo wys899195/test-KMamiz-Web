@@ -25,39 +25,46 @@ const useHoverHighlight = (): [
 const state = [
   'added',
   'modified',
-  'deleted'
+  'deleted',
+  'unchanged'
 ] as const;
 export type GraphDifferenceState = typeof state[number];
 
-type NodesInfo = {
-  id:string,
-  name:string,
+type DiffBetweenTwoServiceNodes = {
+  serviceIdPair: [string,string];
+  serviceStatePair: [GraphDifferenceState,GraphDifferenceState];
+  addedNodeIds: string[];
+  deletedNodeIds: string[];
+  addedLinkIds: string[];
+  deletedLinkIds: string[];
 }
-type NodeGroupInfo = {
-  ServiceNodeState:GraphDifferenceState,
-  ServiceNodeId:string, //service node id
-  groupName:string, //service node name
-  endPointNodesInfo:Array<NodesInfo>
-}
+
 export type GraphDifferenceInfo = {
-  addedNodeIds: Set<string>; // to display added nodes at the dependency graph
-  deletedNodeIds: Set<string>; // to display deleted nodes at the dependency graph
-  addedNodesAfterGrouping: Array<NodeGroupInfo>; // to display differences in GraphDiffTabs
-  deletedNodesAfterGrouping: Array<NodeGroupInfo>; // to display differences in GraphDiffTabs
+  // display at the Overview area
+  addedNodeIds: string[]; 
+  deletedNodeIds: string[];
+  addedLinkIds: string[]; 
+  deletedLinkIds: string[];
+
+  // display at the Diff Details (between each pair of services) area
+  allServiceNodeIds: string[];
+  diffsBetweenTwoServices: DiffBetweenTwoServiceNodes[]; 
 };
+
 const useGraphDifference = (): [
   GraphDifferenceInfo,
   Dispatch<SetStateAction<GraphDifferenceInfo>>
 ] => {
   const [graphDifference, setGraphDifference] = useState<GraphDifferenceInfo>({
-    addedNodeIds: new Set<string>(),
-    deletedNodeIds: new Set<string>(),
-    addedNodesAfterGrouping: new Array<NodeGroupInfo>(),
-    deletedNodesAfterGrouping: new Array<NodeGroupInfo>(),
+    addedNodeIds: [],
+    deletedNodeIds: [],
+    addedLinkIds: [],
+    deletedLinkIds: [],
+    allServiceNodeIds: [],
+    diffsBetweenTwoServices: [],
   });
   return [graphDifference, setGraphDifference];
 };
-
 
 export class DependencyGraphUtils {
   private constructor() {}
@@ -99,78 +106,178 @@ export class DependencyGraphUtils {
     return graphData;
   }
 
+  static TLinkToId(link:TLink):string {
+    return `${link.source}==>${link.target}`
+  }
+
   static CompareTwoGraphData(latestData:TGraphData,taggedData:TGraphData):GraphDifferenceInfo{
     if (!latestData || !taggedData){
       return {
-        addedNodeIds: new Set<string>(),
-        deletedNodeIds: new Set<string>(),
-        addedNodesAfterGrouping: new Array<NodeGroupInfo>(),
-        deletedNodesAfterGrouping: new Array<NodeGroupInfo>(),
+        addedNodeIds: [],
+        deletedNodeIds: [],
+        addedLinkIds: [],
+        deletedLinkIds: [],
+        allServiceNodeIds: [],
+        diffsBetweenTwoServices: [],
       }
     }else{
-      //excluding external nodes
-      const nodeIdsInLatestData: string[] = latestData.nodes.map(node => node.id).filter(id => id !== "null");
-      const nodeIdsInTaggedData: string[] = taggedData.nodes.map(node => node.id).filter(id => id !== "null");
+      console.log("taggedData")
+      console.log(taggedData)
+
+      // ids of all nodes
+      const nodeIdsInLatestData: string[] = latestData.nodes.map(node => node.id)
+      const nodeIdsInTaggedData: string[] = taggedData.nodes.map(node => node.id);
       const addedNodeIds: Set<string> = new Set(nodeIdsInLatestData.filter(id => !nodeIdsInTaggedData.includes(id)));
       const deletedNodeIds: Set<string> = new Set(nodeIdsInTaggedData.filter(id => !nodeIdsInLatestData.includes(id)));
-
       const addedNodes: Set<any> = new Set(latestData.nodes.filter(node => addedNodeIds.has(node.id)));
       const deletedNodes: Set<any> = new Set(taggedData.nodes.filter(node => deletedNodeIds.has(node.id)));
 
-      const addedNodeGroupNames: Set<string> = new Set([...addedNodes].map(node => node.group));
-      const deletedNodeGroupNames: Set<string> = new Set([...deletedNodes].map(node => node.group));
+      // ids of all links excluding external nodes
+      const linkIdsInLatestData: string[] = latestData.links.map(link => this.TLinkToId(link));
+      const linkIdsInTaggedData: string[] = taggedData.links.map(link => this.TLinkToId(link));
+      const addedLinkIds: Set<string> = new Set(linkIdsInLatestData.filter(id => !linkIdsInTaggedData.includes(id)));
+      const deletedLinkIds: Set<string> = new Set(linkIdsInTaggedData.filter(id => !linkIdsInLatestData.includes(id)));
 
-      const addedNodesAfterGrouping:Array<NodeGroupInfo> = [...addedNodeGroupNames]
-        .map(group =>{
-          const isServiceNodeInaddedNodes:boolean = 
-            [...addedNodes].find(node => node.id === group) !== undefined;
-          
-          return {
-            ServiceNodeState:isServiceNodeInaddedNodes ? 'added' : 'modified',
-            ServiceNodeId:group,
-            groupName:group.replace("\t", "."),
-            endPointNodesInfo:[...addedNodes]
-              .filter(node => node.group === group && node.group !== node.id)
-              .map(node => {
-                return {
-                  id:node.id,
-                  name:node.name
-                }
-              })
+      // ids of service nodes (including external node)
+      const allServiceNodeIds: string[] = 
+      Array.from(
+        new Set(
+          [...latestData.nodes,...taggedData.nodes]
+            .filter(node => node.id === node.group)
+            .map(node => node.id)
+        )
+      );
+
+      // At least two services are required for show diff between two services
+      if(allServiceNodeIds.length <= 2){
+        return {
+          addedNodeIds: Array.from(addedNodeIds),
+          deletedNodeIds: Array.from(deletedNodeIds),
+          addedLinkIds: Array.from(addedLinkIds),
+          deletedLinkIds: Array.from(deletedLinkIds),
+          allServiceNodeIds: allServiceNodeIds.filter(id => id !== 'null'),
+          diffsBetweenTwoServices: new Array<DiffBetweenTwoServiceNodes>(),
+        }
+      }
+      const addedServiceNodeIds: string[] = 
+        Array.from(
+          new Set(
+            [...addedNodeIds].filter(id => allServiceNodeIds.includes(id))
+          )
+        );
+      const deletedServiceNodeIds: string[] =
+        Array.from(
+          new Set(
+            [...deletedNodeIds].filter(id => allServiceNodeIds.includes(id))
+          )
+        );
+      const overlappingServiceNodeIds: string[] =
+        Array.from(
+          new Set(
+            [...allServiceNodeIds].filter(id => !addedNodeIds.has(id) && !deletedNodeIds.has(id))
+          )
+        );
+
+      const diffDetails:Array<DiffBetweenTwoServiceNodes> = []
+      
+      for (let i = 0; i < allServiceNodeIds.length - 1; i++) {
+        for (let j = i + 1; j < allServiceNodeIds.length; j++) {
+          const serviceIdPair: [string,string] = [
+            allServiceNodeIds[i],allServiceNodeIds[j]
+          ]
+          const serviceStatePair:[GraphDifferenceState,GraphDifferenceState] = [
+            addedServiceNodeIds.includes(allServiceNodeIds[i]) ? "added"
+                  : deletedServiceNodeIds.includes(allServiceNodeIds[i]) ? "deleted" 
+                  : overlappingServiceNodeIds.includes(allServiceNodeIds[i]) ? "modified" : "unchanged",
+            addedServiceNodeIds.includes(allServiceNodeIds[j]) ? "added"
+                  : deletedServiceNodeIds.includes(allServiceNodeIds[j]) ? "deleted" 
+                  : overlappingServiceNodeIds.includes(allServiceNodeIds[j]) ? "modified" : "unchanged"
+          ]
+          const addedNodeIdsBetweenTwoServices:string[] = 
+            [...addedNodes]
+              .filter(node => node.group === allServiceNodeIds[i] || node.group === allServiceNodeIds[j])
+              .map(node => node.id)
+          const deletedNodeIdsBetweenTwoServices:string[] = 
+            [...deletedNodes]
+              .filter(node => node.group === allServiceNodeIds[i] || node.group === allServiceNodeIds[j])
+              .map(node => node.id)
+          const addedLinkIdsBetweenTwoServices:string[] = 
+            [...addedLinkIds]
+              .filter(linkId => 
+                linkId.includes(allServiceNodeIds[i]) && linkId.includes(allServiceNodeIds[j])
+                || linkId.includes(allServiceNodeIds[i]) && linkId.includes(allServiceNodeIds[i])
+                || linkId.includes(allServiceNodeIds[j]) && linkId.includes(allServiceNodeIds[j])
+              )
+          const deletedLinkIdsBetweenTwoServices:string[] = 
+            [...deletedLinkIds]
+              .filter(linkId => 
+                linkId.includes(allServiceNodeIds[i]) && linkId.includes(allServiceNodeIds[j])
+                || linkId.includes(allServiceNodeIds[i]) && linkId.includes(allServiceNodeIds[i])
+                || linkId.includes(allServiceNodeIds[j]) && linkId.includes(allServiceNodeIds[j])
+              )
+
+          // filter out two services that are not directly dependent
+          if (addedLinkIdsBetweenTwoServices.length !== 0 || deletedLinkIdsBetweenTwoServices.length !== 0){
+            diffDetails.push({
+              serviceIdPair:serviceIdPair,
+              serviceStatePair:serviceStatePair,
+              addedNodeIds:addedNodeIdsBetweenTwoServices,
+              deletedNodeIds:deletedNodeIdsBetweenTwoServices,
+              addedLinkIds:addedLinkIdsBetweenTwoServices,
+              deletedLinkIds:deletedLinkIdsBetweenTwoServices,
+            })
           }
         }
-      )
-      const deletedNodesAfterGrouping:Array<NodeGroupInfo> = [...deletedNodeGroupNames]
-        .map(group =>{
-          const isServiceNodeIndeletedNodes:boolean = 
-            [...deletedNodes].find(node => node.id === group) !== undefined;
-          
-          return {
-            ServiceNodeState:isServiceNodeIndeletedNodes ? 'deleted' : 'modified',
-            ServiceNodeId:group,
-            groupName:group.replace("\t", "."),
-            endPointNodesInfo:[...deletedNodes]
-              .filter(node => node.group === group && node.group !== node.id)
-              .map(node => {
-                return {
-                  id:node.id,
-                  name:node.name
-                }
-              })
-          }
-        }
-      )
-      console.log("addedNodesAfterGrouping")
-      console.log(addedNodesAfterGrouping)
-      console.log("deletedNodesAfterGrouping")
-      console.log(deletedNodesAfterGrouping)
+      }
+
+      console.log(addedLinkIds)
+      console.log(deletedLinkIds)
+
       return {
-        addedNodeIds: addedNodeIds,
-        deletedNodeIds: deletedNodeIds,
-        addedNodesAfterGrouping: addedNodesAfterGrouping,
-        deletedNodesAfterGrouping: deletedNodesAfterGrouping
+        addedNodeIds: Array.from(addedNodeIds),
+        deletedNodeIds: Array.from(deletedNodeIds),
+        addedLinkIds: Array.from(addedLinkIds),
+        deletedLinkIds: Array.from(deletedLinkIds),
+        allServiceNodeIds: allServiceNodeIds.filter(id => id !== 'null'),
+        diffsBetweenTwoServices: diffDetails,
       }
     }
+  }
+
+  static toDetailsBetweenTwoServicesGraph(graphData:TGraphData,firstServiceNodeId:string,secondServiceNodeId:string):TGraphData{
+    if (firstServiceNodeId  && secondServiceNodeId && firstServiceNodeId  != secondServiceNodeId) {
+      const FilteredLinks: Array<TLink> = 
+      graphData.links.filter(link =>
+        link.source.includes(firstServiceNodeId) && link.target.includes(secondServiceNodeId)
+        || link.source.includes(secondServiceNodeId) && link.target.includes(firstServiceNodeId)
+        || link.source.includes(firstServiceNodeId) && link.target.includes(firstServiceNodeId)
+        || link.source.includes(secondServiceNodeId) && link.target.includes(secondServiceNodeId)
+      );
+      const FilteredNodes: Array<TNode> = 
+        graphData.nodes
+          .filter(node => node.group === firstServiceNodeId || node.group === secondServiceNodeId);
+
+      FilteredNodes.forEach((n) => {
+        n.linkInBetween = FilteredLinks.filter((l) => l.source === n.id);
+        n.dependencies = n.linkInBetween.map((l) => l.target);
+      });
+
+      const FilteredGraphData = {
+        nodes:FilteredNodes,
+        links:FilteredLinks,  
+      }
+
+      console.log("FilteredGraphData")
+      console.log(FilteredGraphData)
+      return FilteredGraphData;
+    }
+    else{
+      return {
+        nodes:[],
+        links:[],
+      }
+    }
+
   }
 
   static DrawHexagon(x: any, y: any, r: number, ctx: CanvasRenderingContext2D) {
@@ -281,14 +388,13 @@ export class DependencyGraphUtils {
   }
 
   static PaintNodeRingForShowDifference(
-    showDifference: boolean,
     node: any,
     ctx: CanvasRenderingContext2D,
     isAddedNode: boolean,
     isDeletedNode: boolean
   ) {
     // add ring just for difference nodes
-    if (!showDifference || isAddedNode && isDeletedNode){
+    if (isAddedNode && isDeletedNode){
       // do nothing
     }
     else if(isAddedNode || isDeletedNode){
@@ -301,13 +407,13 @@ export class DependencyGraphUtils {
       const { x, y } = node;
       ctx.beginPath();
       if (node.id === node.group) {
-        const r = DependencyGraphUtils.GraphBasicSettings.nodeRelSize * 1.10;
+        const r = DependencyGraphUtils.GraphBasicSettings.nodeRelSize * 1;
         DependencyGraphUtils.DrawHexagon(x, y, r, ctx);
       } else {
         ctx.arc(
           x,
           y,
-          DependencyGraphUtils.GraphBasicSettings.nodeRelSize * 1.9,
+          DependencyGraphUtils.GraphBasicSettings.nodeRelSize * 1.65,
           0,
           2 * Math.PI,
           false

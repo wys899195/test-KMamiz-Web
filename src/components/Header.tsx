@@ -17,6 +17,7 @@ import {
   BarChart,
   BubbleChart,
   Code,
+  Difference,
   LocalOffer,
   Notifications,
   NotificationsActive,
@@ -41,7 +42,7 @@ export default function Header() {
 
   const routes = [
     { name: "Dependency Graph", path: "/", icon: <BubbleChart /> },
-    { name: "Tagged Dependency Graph", path: "/taggedDependencyGraph", icon: <BubbleChart /> },
+    { name: "Dependency Graph Diff", path: "/dependencyGraphDiff", icon: <Difference /> },
     { name: "Metrics", path: "/metrics", icon: <StackedLineChart /> },
     { name: "Insights", path: "/insights", icon: <BarChart /> },
     { name: "Endpoints", path: "/endpoints", icon: <LocalOffer /> },
