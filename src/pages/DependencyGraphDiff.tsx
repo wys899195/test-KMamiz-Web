@@ -37,6 +37,7 @@ import {
 import {
   useGraphDifference,
   DependencyGraphUtils,
+  ServicvePairRelasionShip,
 } from "../classes/DependencyGraphUtils";
 import ViewportUtils from "../classes/ViewportUtils";
 import GraphService from "../services/GraphService";
@@ -95,8 +96,12 @@ const useStyles = makeStyles(() => ({
     paddingLeft: "0.8em",
     zIndex:100,
   },
-  overview:{
-
+  graphMessage: {
+    textAlign: 'center',
+    color:'gray',
+    marginTop:'0.08em',
+    width:'100%',
+    height:'0.01em',
   }
 }));
 
@@ -107,14 +112,14 @@ export default function DependencyGraphDiff() {
   
   // component references
   const graphRef = useRef<any>();
-  const overviewTitleRef = useRef<any>();
   const rawDataRef = useRef<string>();
   const taggedGraphRef = useRef<any>();
   const taggedRawDataRef = useRef<string>();
-  const twoServicesGraphRef = useRef<any>();
-  const twoServicesRawDataRef = useRef<string>();
-  const twoServicesTaggedGraphRef = useRef<any>();
-  const twoServicesTaggedRawDataRef = useRef<string>();
+
+  const servicePairGraphRef = useRef<any>();
+  const rawServicePairDataRef = useRef<string>();
+  const taggedServicePairGraphRef = useRef<any>();
+  const rawTaggedServicePairDataRef = useRef<string>();
 
   // graph data
   const [data, setData] = useState<any>();
@@ -130,7 +135,7 @@ export default function DependencyGraphDiff() {
   const [showServicePairDiff, setShowServicePairDiff] = useState(false);
 
   // size control
-  const rwdWidth = 1250
+  const rwdWidth = 1300
   const [pageSize, setPageSize] = useState([0, 0]);
   const [gridSize, setGridSize] = useState(12);
   const [graphWidthRate, setCanvasWidthRate] = useState(0.5);
@@ -142,10 +147,14 @@ export default function DependencyGraphDiff() {
   const [tags, setTags] = useState<string[]>([]);
   const [newVersion, setNewVersion] = useState<string>("");
 
-  // choose service at diff details between two services
+  // some controller at "Diff Details ( between each pair of services" area
   const [allSvcNodeIds, setAllSvcNodeIds] = useState<string[]>([]);
   const [firstSvcNodeId, setFirstSvcNodeId] = useState<string>("");
   const [secondSvcNodeId, setSecondSvcNodeId] = useState<string>("");
+  const [servicePairGraphRS,setServicePairGraphRS] = useState<ServicvePairRelasionShip>('no matching services in graph');
+  const [taggedServicePairGraphRS,setTaggedServicePairGraphRS] = useState<ServicvePairRelasionShip>('no matching services in graph');
+  const [servicePairGraphMessage, setServicePairGraphMessage] = useState<string>("");
+  const [taggedServicePairGraphMessage, setTaggedServicePairGraphMessage] = useState<string>("");
 
   useEffect(() => {
     const unsubscribe = [
@@ -234,42 +243,46 @@ export default function DependencyGraphDiff() {
     if(firstSvcNodeId && secondSvcNodeId){
       GraphService.getInstance().getDependencyGraph(showEndpoint).then((nextTwoServicesData) => {
         if (nextTwoServicesData){
-          nextTwoServicesData = DependencyGraphUtils
+          const {graph,relationship} = DependencyGraphUtils
             .toDetailsBetweenTwoServicesGraph(nextTwoServicesData,firstSvcNodeId,secondSvcNodeId)
-          const nextTwoServicesRawData = JSON.stringify(nextTwoServicesData);
-          if (twoServicesRawDataRef.current === nextTwoServicesRawData) return;
-          if (!twoServicesRawDataRef.current) {
+          const nextTwoServicesRawData = JSON.stringify(graph);
+          if (rawServicePairDataRef.current === nextTwoServicesRawData) return;
+          if (!rawServicePairDataRef.current) {
             const timer = setInterval(() => {
-              if (!twoServicesGraphRef.current) return;
+              if (!servicePairGraphRef.current) return;
               clearInterval(timer);
               setTimeout(() => {
-                twoServicesGraphRef.current.zoom(2, 0);
-                twoServicesGraphRef.current.centerAt(0, 0);
+                servicePairGraphRef.current.zoom(3, 0);
+                servicePairGraphRef.current.centerAt(0, 0);
               }, 10);
             });
           }
-          twoServicesRawDataRef.current = nextTwoServicesRawData;
-          setServicePairData(DependencyGraphUtils.ProcessData(nextTwoServicesData));
+          rawServicePairDataRef.current = nextTwoServicesRawData;
+          setServicePairData(DependencyGraphUtils.ProcessData(graph));
+          setServicePairGraphRS(relationship);
+          setMessageByRelationship(relationship,setServicePairGraphMessage)
         }
       });
       GraphService.getInstance().getTaggedDependencyGraph(showEndpoint,tag).then((nextTwoServicesTaggedData) => {
         if (nextTwoServicesTaggedData){
-          nextTwoServicesTaggedData = DependencyGraphUtils
-            .toDetailsBetweenTwoServicesGraph(nextTwoServicesTaggedData,firstSvcNodeId,secondSvcNodeId)
-          const nextTwoServicesTaggedRawData = JSON.stringify(nextTwoServicesTaggedData);
-          if (twoServicesTaggedRawDataRef.current === nextTwoServicesTaggedRawData) return;
-          if (!twoServicesTaggedRawDataRef.current) {
+          const {graph,relationship} = DependencyGraphUtils
+            .toDetailsBetweenTwoServicesGraph(nextTwoServicesTaggedData,firstSvcNodeId,secondSvcNodeId);
+          const nextTwoServicesTaggedRawData = JSON.stringify(graph);
+          if (rawTaggedServicePairDataRef.current === nextTwoServicesTaggedRawData) return;
+          if (!rawTaggedServicePairDataRef.current) {
             const timer = setInterval(() => {
-              if (!twoServicesTaggedGraphRef.current) return;
+              if (!taggedServicePairGraphRef.current) return;
               clearInterval(timer);
               setTimeout(() => {
-                twoServicesTaggedGraphRef.current.zoom(2, 0);
-                twoServicesTaggedGraphRef.current.centerAt(0, 0);
+                taggedServicePairGraphRef.current.zoom(3, 0);
+                taggedServicePairGraphRef.current.centerAt(0, 0);
               }, 10);
             });
           }
-          twoServicesTaggedRawDataRef.current = nextTwoServicesTaggedRawData;
-          setTaggedServicePairData(DependencyGraphUtils.ProcessData(nextTwoServicesTaggedData));
+          rawTaggedServicePairDataRef.current = nextTwoServicesTaggedRawData;
+          setTaggedServicePairData(DependencyGraphUtils.ProcessData(graph));
+          setTaggedServicePairGraphRS(relationship);
+          setMessageByRelationship(relationship,setTaggedServicePairGraphMessage)
         }
       });
       setShowServicePairDiff(true);
@@ -311,6 +324,22 @@ export default function DependencyGraphDiff() {
       offset: -216,
     });
   };
+
+  const setMessageByRelationship = (relationship: ServicvePairRelasionShip, setMessage: (message: string) => void) => {
+    switch (relationship) {
+      case 'no matching services in graph':
+        setMessage('These two given services do not exist in this version.');
+        break;
+      case 'indirect dependency':
+        setMessage('These two given services do not have a direct dependency in this version.');
+        break;
+      default:
+        setMessage('');
+        break;
+    }
+  }
+
+
   return (
     <Box className={classes.root}>
       <Grid container padding={1} spacing={0.5} className={classes.pageHeader}>
@@ -473,16 +502,18 @@ export default function DependencyGraphDiff() {
             <Grid item xs={12} className={classes.graphHeader}>
               <h3 className={classes.graphTitle}>Latest Version</h3>
             </Grid>
+            <h3 className={classes.graphMessage}>{servicePairGraphMessage}</h3>
             <Suspense fallback={<Loading />}>
               <ForceGraph2D
-                ref={twoServicesGraphRef}
+                ref={servicePairGraphRef}
                 width={pageSize[0] * graphWidthRate - 20}
-                height={pageSize[1] * graphHeightRate - 90}
+                height={pageSize[1] * graphHeightRate - 115}
                 graphData={servicePairData}
                 {...DiffDetailDependencyGraphFactory.Create(
                   graphDifferenceInfo,
                   firstSvcNodeId,
-                  secondSvcNodeId
+                  secondSvcNodeId,
+                  servicePairGraphRS
                 )}
               />
             </Suspense>
@@ -493,16 +524,18 @@ export default function DependencyGraphDiff() {
             <Grid item xs={12} className={classes.graphHeader}>
               <h3 className={classes.graphTitle}>Selected Version</h3>
             </Grid>
+            <h3 className={classes.graphMessage}>{taggedServicePairGraphMessage}</h3>
             <Suspense fallback={<Loading />}>
               <ForceGraph2D
-                ref={twoServicesTaggedGraphRef}
+                ref={taggedServicePairGraphRef}
                 width={pageSize[0] * graphWidthRate - 20}
-                height={pageSize[1] * graphHeightRate - 90}
+                height={pageSize[1] * graphHeightRate - 115}
                 graphData={taggedServicePairData}
                 {...DiffDetailDependencyGraphFactory.Create(
                   graphDifferenceInfo,
                   firstSvcNodeId,
-                  secondSvcNodeId
+                  secondSvcNodeId,
+                  taggedServicePairGraphRS
                 )}
               />
             </Suspense>

@@ -30,6 +30,14 @@ const state = [
 ] as const;
 export type GraphDifferenceState = typeof state[number];
 
+const relasionShip = [
+  'direct dependency',
+  'indirect dependency',
+  'only one matching service',
+  'no matching services in graph',
+] as const;
+export type ServicvePairRelasionShip = typeof relasionShip[number];
+
 type DiffBetweenTwoServiceNodes = {
   serviceIdPair: [string,string];
   serviceStatePair: [GraphDifferenceState,GraphDifferenceState];
@@ -121,9 +129,6 @@ export class DependencyGraphUtils {
         diffsBetweenTwoServices: [],
       }
     }else{
-      console.log("taggedData")
-      console.log(taggedData)
-
       // ids of all nodes
       const nodeIdsInLatestData: string[] = latestData.nodes.map(node => node.id)
       const nodeIdsInTaggedData: string[] = taggedData.nodes.map(node => node.id);
@@ -230,9 +235,6 @@ export class DependencyGraphUtils {
         }
       }
 
-      console.log(addedLinkIds)
-      console.log(deletedLinkIds)
-
       return {
         addedNodeIds: Array.from(addedNodeIds),
         deletedNodeIds: Array.from(deletedNodeIds),
@@ -244,7 +246,10 @@ export class DependencyGraphUtils {
     }
   }
 
-  static toDetailsBetweenTwoServicesGraph(graphData:TGraphData,firstServiceNodeId:string,secondServiceNodeId:string):TGraphData{
+  static toDetailsBetweenTwoServicesGraph(graphData:TGraphData,firstServiceNodeId:string,secondServiceNodeId:string):{
+    graph:TGraphData,
+    relationship:ServicvePairRelasionShip, // relationship between the two services
+  }{
     if (firstServiceNodeId  && secondServiceNodeId && firstServiceNodeId  != secondServiceNodeId) {
       const FilteredLinks: Array<TLink> = 
       graphData.links.filter(link =>
@@ -253,6 +258,7 @@ export class DependencyGraphUtils {
         || link.source.includes(firstServiceNodeId) && link.target.includes(firstServiceNodeId)
         || link.source.includes(secondServiceNodeId) && link.target.includes(secondServiceNodeId)
       );
+      
       const FilteredNodes: Array<TNode> = 
         graphData.nodes
           .filter(node => node.group === firstServiceNodeId || node.group === secondServiceNodeId);
@@ -267,14 +273,46 @@ export class DependencyGraphUtils {
         links:FilteredLinks,  
       }
 
-      console.log("FilteredGraphData")
-      console.log(FilteredGraphData)
-      return FilteredGraphData;
+      let relationship:ServicvePairRelasionShip;
+
+      const isFirstSVCExist:boolean = FilteredNodes.find(node => node.id === firstServiceNodeId) ? true : false;
+      const isSecondSVCExist:boolean = FilteredNodes.find(node => node.id === secondServiceNodeId) ? true : false;
+
+      if (isFirstSVCExist || isSecondSVCExist){
+        if (isFirstSVCExist && isSecondSVCExist){
+          relationship = FilteredLinks.find(link =>         
+            link.source.includes(firstServiceNodeId) && link.target.includes(secondServiceNodeId)
+            || link.source.includes(secondServiceNodeId) && link.target.includes(firstServiceNodeId))
+          ? 'direct dependency' : 'indirect dependency';
+  
+          if (relationship === 'indirect dependency') {
+            /* add an invisible line between the two indirectly dependent service nodes 
+            to prevent them from spreading too far apart and exceeding the canvas */
+            FilteredLinks.push({source:firstServiceNodeId,target:secondServiceNodeId})
+          }
+        }
+        else{
+          relationship = 'only one matching service'
+        }
+      }
+      else {
+        relationship = 'no matching services in graph'
+      }
+
+
+
+      return {
+        graph:FilteredGraphData,
+        relationship:relationship
+      };
     }
     else{
       return {
-        nodes:[],
-        links:[],
+        graph:{
+          nodes:[],
+          links:[],
+        },
+        relationship:'no matching services in graph'
       }
     }
 

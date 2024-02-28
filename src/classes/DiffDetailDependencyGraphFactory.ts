@@ -1,4 +1,4 @@
-import { DependencyGraphUtils, GraphDifferenceInfo } from "./DependencyGraphUtils";
+import { DependencyGraphUtils, GraphDifferenceInfo, ServicvePairRelasionShip } from "./DependencyGraphUtils";
 
 export class DiffDetailDependencyGraphFactory {
   private constructor() {}
@@ -6,7 +6,8 @@ export class DiffDetailDependencyGraphFactory {
   static Create(
     graphDifferenceInfo: GraphDifferenceInfo,
     firstServiceNodeId: string,
-    secondServiceNodeId:string
+    secondServiceNodeId:string,
+    relasionShip:ServicvePairRelasionShip
   ) {
     const { diffsBetweenTwoServices } = graphDifferenceInfo;
     const targetPairInfo = diffsBetweenTwoServices.find(pairInfo =>
@@ -26,13 +27,28 @@ export class DiffDetailDependencyGraphFactory {
       linkDirectionalParticleWidth: (link: any) =>
         4,
       linkColor: (link: any) => {
+        // added link
         if (targetPairInfo?.addedLinkIds.includes(DependencyGraphUtils.TLinkToId({source:link.source.id,target:link.target.id}))){
           return 'rgba(0, 255, 0, 1)';
         }
+        // deleted link
         if(targetPairInfo?.deletedLinkIds.includes(DependencyGraphUtils.TLinkToId({source:link.source.id,target:link.target.id}))){
           return 'rgba(255, 0, 0, 1)';
         }
+        // invisible link
+        if(relasionShip === 'indirect dependency' && link.source.id === firstServiceNodeId && link.target.id === secondServiceNodeId){
+          return 'rgba(0, 0, 0, 0)';
+        }
+        // normal link
         return '';
+      },
+      linkDirectionalArrowColor:(link: any) => {
+        // invisible link arrow
+        if(relasionShip === 'indirect dependency' && link.source.id === firstServiceNodeId && link.target.id === secondServiceNodeId){
+          return 'rgba(0, 0, 0, 0)';
+        }
+        // normal link arrow
+        return 'dimgray';
       },
       nodeCanvasObject: (node: any, ctx: any) =>
         DependencyGraphUtils.PaintNodeRingForShowDifference(
