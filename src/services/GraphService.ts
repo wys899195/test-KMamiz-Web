@@ -1,7 +1,7 @@
 import Config from "../../Config";
 import { Color } from "../classes/ColorUtils";
 import { TLineChartData } from "../entities/TLineChartData";
-import { TTaggedGraphData } from "../entities/TTaggedGraphData";
+import { TTaggedDiffData } from "../entities/TTaggedDiffData";
 import { TChordData, TChordRadius } from "../entities/TChordData";
 import { TGraphData } from "../entities/TGraphData";
 import { TServiceCoupling } from "../entities/TServiceCoupling";
@@ -122,18 +122,46 @@ export default class GraphService {
     return await GraphService.getInstance().get<TServiceCoupling[]>(path);
   }
 
+  async getTaggedServiceCohesion(tag: string | null,namespace?: string) {
+    if(!tag){
+      return this.getServiceCohesion(namespace);
+    }
+    const path = `${this.prefix}/graph/taggedCohesion${
+      namespace ? `/${encodeURIComponent(namespace)}` : ""
+    }?tag=${tag}`;
+    return await GraphService.getInstance().get<TTotalServiceInterfaceCohesion[]>(path);
+  }
+  async getTaggedServiceInstability(tag: string | null,namespace?: string) {
+    if(!tag){
+      return this.getServiceInstability(namespace);
+    }
+    const path = `${this.prefix}/graph/taggedInstability${
+      namespace ? `/${encodeURIComponent(namespace)}` : ""
+    }?tag=${tag}`;
+    return await GraphService.getInstance().get<TServiceInstability[]>(path);
+  }
+  async getTaggedServiceCoupling(tag: string | null,namespace?: string) {
+    if(!tag){
+      return this.getServiceCoupling(namespace);
+    }
+    const path = `${this.prefix}/graph/taggedCoupling${
+      namespace ? `/${encodeURIComponent(namespace)}` : ""
+    }?tag=${tag}`;
+    return await GraphService.getInstance().get<TServiceCoupling[]>(path);
+  }
 
 
-  async getTagsOfTaggedDependencyGraph() {
+
+  async getTagsOfDiffdata() {
     return (
       (await this.get<string[]>(
-        `${this.prefix}/graph/taggedDependency/tags`
+        `${this.prefix}/graph/diffData/tags`
       )) || []
     );
   }
 
-  async addTaggedDependencyGraphData(tagged: TTaggedGraphData) {
-    const res = await fetch(`${this.prefix}/graph/taggedDependency/tags`, {
+  async addTaggedDiffData(tagged: TTaggedDiffData) {
+    const res = await fetch(`${this.prefix}/graph/diffData/tags`, {
       method: "POST",
       body: JSON.stringify(tagged),
       headers: {
@@ -143,8 +171,8 @@ export default class GraphService {
     return res.ok;
   }
 
-  async deleteTaggedDependencyGraph(tag: string) {
-    const res = await fetch(`${this.prefix}/graph/taggedDependency/tags`, {
+  async deleteTaggedDiffData(tag: string) {
+    const res = await fetch(`${this.prefix}/graph/diffData/tags`, {
       method: "DELETE",
       body: JSON.stringify({tag}),
       headers: {
